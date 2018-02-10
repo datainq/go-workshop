@@ -19,7 +19,9 @@ type topic struct {
 // AddListener creates a channel where all new messages from users will be
 // pushed. It returns a listening cancel function.
 func (t *topic) AddListener() (list <-chan Post, canc func()) {
-	panic("implement me")
+	p := make(chan Post, 10)
+	t.listeners[p] = true
+	return p, func() { delete(t.listeners, p) }
 }
 
 // GetPipe returns a channel where new messages from clients can be pushed.
@@ -37,7 +39,11 @@ func (t *topic) String() string {
 
 // Run listen to a incoming messages and broadcasts them to all listeners.
 func (t *topic) Run() {
-	panic("implement me")
+	for m := range t.b {
+		for l := range t.listeners {
+			l <- m
+		}
+	}
 }
 
 func NewTopic(kind, name string) Topic {
