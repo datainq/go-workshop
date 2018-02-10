@@ -7,7 +7,14 @@ import (
 	"os"
 	"path"
 
+	"github.com/datainq/go-workshop/pkg/topic"
+	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	socketBufferSize  = 1024
+	messageBufferSize = 1024
 )
 
 func main() {
@@ -23,6 +30,23 @@ func main() {
 
 	logrus.Info("Hello world!")
 
+	upgrader := &websocket.Upgrader{
+		ReadBufferSize:    socketBufferSize,
+		WriteBufferSize:   socketBufferSize,
+		EnableCompression: true,
+	}
+	tp := topic.NewTopic("", "")
+	go tp.Run()
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		logrus.Info("got a ws request!")
+		socket, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			logrus.Errorf("failed to upgrade connection: %s", err)
+		}
+		client := topic.NewClient(socket, tp)
+		go client.ReadPipe()
+		client.WritePipe()
+	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		logrus.Info("got a request!")
 		f, err := os.Open(path.Join(tmplDir, "index.html"))
