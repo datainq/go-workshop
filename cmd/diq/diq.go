@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"net/http"
 	"os"
@@ -9,12 +10,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	tmplDir   = "./tmpl"
-	staticDir = "./static"
-)
-
 func main() {
+	var tmplDir, staticDir, addr string
+	flag.StringVar(&tmplDir, "tmplDir", "./tmpl", "template directory")
+	flag.StringVar(&staticDir, "staticDir", "./static",
+		"directory with static resource (JS, CSS)")
+	flag.StringVar(&addr, "addr", ":8080", "address to listen at")
+	flag.Parse()
+
 	logrus.SetFormatter(&logrus.TextFormatter{ForceColors: true})
 	logrus.SetOutput(os.Stderr)
 
@@ -33,7 +36,7 @@ func main() {
 	})
 	http.Handle("/static/",
 		http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(addr, nil); err != nil {
 		logrus.Errorf("Problem listening: %s", err)
 	}
 }
